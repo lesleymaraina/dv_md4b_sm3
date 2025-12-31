@@ -1,0 +1,458 @@
+---
+title: "Deploying and Maintaining Interactive Biomedical Dashboards"
+author: "<br><br><span style='font-size:25px;'><strong>Lesley Chapman Hannah, Ph.D., M.S.</strong></span><br>College of Graduate Studies<br>Northeast Ohio Medical University"
+
+format: 
+  revealjs:
+    #theme: solarized
+    css: style.css
+    slide-number: true
+    chalkboard: 
+      buttons: false
+    preview-links: auto
+    logo: images/Flame.jpg
+    #css: styles.css
+    
+---
+
+## <span style="font-size:80%">Shiny App Documentation: Rationale</span> {.smaller}
+
+- Shiny app can be considered an ongoing biomedical analytical product 
+- App executes code repeatedly in response to user inputs, often for different users and different analytic questions
+- Proper documentation makes the app usable beyond the original developer
+- Documentation makes a Shiny app reviewable by allowing others to understand what data are used, how they are processed, and what computations underlie each output
+
+::: footer
+:::
+
+
+
+## <span style="font-size:80%">Shiny App Documentation: Rationale</span> {.smaller}
+
+- Documentation allows the user to understand what data are used, how they are processed, and what computations underlie each output
+- Documentation also supports reproducibility by providing descriptions of data sources, preprocessing steps, package dependencies, and default parameters make it possible to regenerate results or re-run the analysis under controlled conditions
+- Documentation also helps future users or developers to identify where key logic lives and how changes will affect the app’s behavior
+
+::: footer
+:::
+
+## <span style="font-size:80%">Project Documentation Checklist</span> {.smaller}
+
+App documentation includes:
+
+- Clear project and directory structure
+
+- App-level README describing purpose, data sources, and outputs/Code with comments
+
+
+::: footer
+:::
+
+## <span style="font-size:80%">Shiny App: Directory Structure</span> {.smaller}
+
+Directory structure should make the executable analysis clear and include:
+
+- code runs the app
+- data file(s)  the app depends on
+- files are required for deployment
+
+
+
+::: footer
+:::
+
+## <span style="font-size:80%">Shiny App: Directory Structure</span> {.smaller}
+
+::: columns
+::: {.column width="50%"}
+
+UCEC Shiny App Directory Structure
+
+- app.R :  complete UI and server logic
+- ucec_data.csv : local data dependency used by the app
+
+Code can be used for:
+
+- local testing
+- deployment to shinyapps.io
+
+:::
+
+::: {.column width="50%"}
+
+
+![](images/image_1.png){.border .border-thick}
+:::
+
+:::
+::: footer
+:::
+
+## <span style="font-size:80%">Shiny App: README</span> {.smaller}
+
+- README provides the information needed for users to understand and repeat the analysis
+- Biomedical analyses evolve as data are updated, code changes are implemented, or questions change
+- README preserves essential information about the analysis so that it remains usable and interpretable over time
+
+
+::: footer
+:::
+
+## <span style="font-size:80%">Text editors</span> {.smaller}
+
+- README files are plain text files [typically README.md]
+- Text editors are used for :
+
+  - Write and edit project descriptions and instructions
+  - Update documentation as analyses or code change
+  - Correct errors or clarify usage without altering code behavior
+  - Maintain consistent formatting that works across platforms
+
+::: footer
+:::
+
+## <span style="font-size:80%">Text editors</span> {.smaller}
+
+::: columns
+::: {.column width="50%"}
+
+
+
+**Command line Text Editors**
+
+  - **nano**:  simple, beginner-friendly terminal editor
+  - **vim / vi**:  powerful terminal editor, common on servers
+
+**Desktop text editors** 
+
+- **VS Code**:  widely used, Markdown preview, Git integration
+- **RStudio**:  convenient for README files in R / Shiny projects
+- **Sublime Text**:  lightweight, fast text editor
+
+:::
+
+::: {.column width="50%"}
+
+
+![](images/image_2.png){.border .border-thick}
+:::
+
+:::
+::: footer
+:::
+
+
+
+
+## <span style="font-size:80%">UCEC Study: README</span> {.smaller}
+
+::: columns
+::: {.column width="50%"}
+
+
+
+Project Overview Section
+
+- Defines problem being addressed
+- Lists disease domain (UCEC)
+- Analytical purpose (exploratory analysis)
+- Project structure [files used to run app]
+
+:::
+
+::: {.column width="50%"}
+
+
+![](images/README_1.png){.border .border-thick}
+:::
+
+:::
+::: footer
+:::
+
+## <span style="font-size:80%">UCEC Study: README</span> {.smaller}
+
+::: columns
+::: {.column width="50%"}
+
+
+
+Data Description 
+
+- Defines what the analysis operates on
+- Describes: representative variables (Age, Stage, Tumor Size)
+
+Software Requirements
+
+- programming language (R)
+- required packages
+
+Package Installation
+
+:::
+
+::: {.column width="50%"}
+
+
+![](images/README_2.png){.border .border-thick}
+:::
+
+:::
+::: footer
+:::
+
+
+## <span style="font-size:80%">UCEC Study: README</span> {.smaller}
+
+::: columns
+::: {.column width="50%"}
+
+
+
+Running the app
+
+  - how to install dependencies
+  - how to launch the app locally
+
+Deployment Notes
+
+  - documents how the analysis is intended to be hosted and shared (i.e. : shinyapps.io)
+
+Reproducibility Considerations
+
+Intended Use
+
+  - exploratory analysis and teaching,
+  - not clinical decision-making
+
+
+:::
+
+::: {.column width="50%"}
+
+
+![](images/README_3.png){.border .border-thick}
+:::
+
+:::
+::: footer
+:::
+
+
+## <span style="font-size:80%">Shinyapps.io</span> {.smaller}
+
+
+- cloud hosting service for R Shiny applications
+- Tool that allows users to publish and share interactive Shiny apps
+
+Provides:
+
+- server that can host R and Shiny
+- security configuration
+- URL routing
+- session management
+
+
+::: footer
+:::
+
+## <span style="font-size:80%">Launch app via shinyapps.io</span> {.smaller}
+
+::: columns
+::: {.column width="40%"}
+
+
+
+Deploy to shinyapps.io 
+
+1. Copy code and README to a new directory $\rightarrow$ directory to be deployed to shinyapps.io
+2. Create an shinyapps.io  account [supplementary video on canvas]
+3. Install rsconnect via R Studio
+4. Authenticate once per machine via command line or R
+5. Deploy the folder
+
+
+:::
+
+::: {.column width="60%"}
+
+
+![](images/image_3.png){.border .border-thick}
+:::
+
+:::
+::: footer
+:::
+
+## <span style="font-size:80%">Shinyapps.io: Set Up Directory and Transfer Files</span> {.smaller}
+
+::: columns
+::: {.column width="50%"}
+
+The following steps will be completed using MacOS
+
+n.b.: complete additional independent searches via Google or classmates if using Linux or Windows
+
+- Create a new directory
+- Transfer R code, data, and README to directory
+
+
+
+
+:::
+
+::: {.column width="50%"}
+
+
+![](images/image_4.png){.border .border-thick}
+:::
+
+:::
+::: footer
+:::
+
+
+## <span style="font-size:80%">Shinyapps.io</span> {.smaller}
+
+::: columns
+::: {.column width="50%"}
+
+- the deployable folder should should have a similar file structure as shown on the right
+- Files needed to run the app must live inside this folder
+
+
+
+
+
+:::
+
+::: {.column width="50%"}
+
+
+![](images/image_4.png){.border .border-thick}
+:::
+
+:::
+::: footer
+:::
+
+## <span style="font-size:80%">Shinyapps.io</span> {.smaller}
+
+::: columns
+::: {.column width="50%"}
+
+Open a new Rscript in R studio and run [should be done once per machine]: 
+
+```r
+install.packages("rsconnect")
+rsconnect::setAccountInfo(
+  name   = "<USERNAME>",
+  token  = "<TOKEN>",
+  secret = "<SECRET>"
+)
+```
+
+Information above can be found via your shinyapp.io account
+:::
+
+::: {.column width="50%"}
+
+
+![](images/image_5.png){.border .border-thick}
+:::
+
+:::
+::: footer
+:::
+
+## <span style="font-size:80%">Deploy Shiny App</span> {.smaller}
+
+::: columns
+::: {.column width="30%"}
+
+- Deploy app via command line
+- If you’re in your app directory, navigate to the directory just above your directory:
+
+```r
+$ cd ../
+```
+
+- Run the following via the command line:
+
+```r
+$ $ R -e "options(repos=c(CRAN='https://cloud.r-project.org')); library(rsconnect); rsconnect::deployApp('ucec_app')"
+```
+
+
+:::
+
+::: {.column width="60%"}
+
+
+![](images/image_6.png){.border .border-thick}
+:::
+
+:::
+::: footer
+:::
+
+
+## <span style="font-size:80%">View Shiny App</span> {.smaller}
+
+::: columns
+::: {.column width="30%"}
+
+View shiny app via listed URL
+
+
+:::
+
+::: {.column width="70%"}
+
+
+![](images/image_7.png){.border .border-thick}
+:::
+
+:::
+::: footer
+:::
+
+
+
+## <span style="font-size:80%">View Shiny App</span> {.smaller}
+
+::: columns
+::: {.column width="50%"}
+
+View shiny app via listed URL
+
+
+
+
+
+:::
+
+::: {.column width="50%"}
+
+
+![](images/image_8.png){.border .border-thick}
+:::
+
+:::
+::: footer
+:::
+
+
+## <span style="font-size:80%">Summary</span> {.smaller}
+
+- clear documentation allows users to understand the data sources, preprocessing steps, and computations that underlie each dashboard output
+- README files document the scientific question, data structure, dependencies, and intended use so the app remains interpretable over time
+- shinyapps.io provides a practical deployment platform by handling server infrastructure, session management, and URL routing for Shiny applications
+- Deploying a Shiny app involves packaging code, data, and documentation together
+
+
+::: footer
+:::
+
+
+

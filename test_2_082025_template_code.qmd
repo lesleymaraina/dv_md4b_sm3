@@ -1,0 +1,1345 @@
+---
+title: "Building a shiny app : from static plot to reactive dashboard"
+author: "<br><br><span style='font-size:25px;'><strong>Lesley Chapman Hannah, Ph.D., M.S.</strong></span><br>College of Graduate Studies<br>Northeast Ohio Medical University"
+
+format: 
+  revealjs:
+    #theme: solarized
+    css: style.css
+    slide-number: true
+    chalkboard: 
+      buttons: false
+    preview-links: auto
+    logo: images/Flame.jpg
+    #css: styles.css
+    
+---
+
+## <span style="font-size:80%">Overview: Building a Biomedical Shiny App in Small, Testable Pieces</span> {.smaller}
+
+- **Shiny app**: interactive web application built in R that allows users to adjust inputs (controls or parameters) through a web browser and immediately see the corresponding outputs (plots, summaries, tables, models) update in response 
+
+- Shiny functions by using reactive programming, which automatically tracks and updates dependencies between inputs and outputs so that only the necessary computations are re-run when something changes
+
+- Python alternative: Dash/Plotly
+
+
+::: footer
+
+:::
+
+## <span style="font-size:80%">Shiny Apps: Core Concepts</span> {.smaller}
+
+- The central idea is that a Shiny app is simply a structured way of connecting three things:
+
+  - Inputs — parameters that define the scientific question
+  - Computations — data transformations and statistical summaries
+  - Outputs — visualizations or tables that expose results
+
+::: footer
+
+:::
+
+## <span style="font-size:80%">Shiny App Parameters</span> {.smaller}
+
+Shiny app - user-controlled parameters exposed through a web interface
+
+- **Inputs** :   knobs, sliders, checkboxes, or text fields that users interact with (e.g., selecting a cohort, changing thresholds)
+- **Reactivity** : Shiny monitors how outputs depend on inputs so that when an input changes, it knows what needs to be recomputed and what can stay the same without you telling it explicitly
+- **Outputs**: results displayed in the browser: interactive plots, tables, statistics, or even downloadable files
+
+::: footer
+
+:::
+
+
+## <span style="font-size:80%">Shiny App Under the Hood</span> {.smaller}
+
+- **UI (User Interface)**:  the form where users specify parameters (like filters, thresholds, selections) [code: R, HTML-like layout functions]
+
+- **Server logic**:  R code that reacts to changes in the UI and generates updated outputs [code: R]
+
+- **Reactive expressions**: code blocks that automatically update when their inputs change, similar to “if X changes, re-compute Y” [code: R]
+
+
+::: footer
+
+:::
+
+## <span style="font-size:80%">Shiny as a workflow</span> {.smaller}
+
+Shiny app is a direct extension of a static analysis pipeline
+
+In a static figure, these steps are considered:
+
+- Defined cohort  (e.g., age range, mutation status)
+- Summary plot and statistics (e.g., survival distributions, counts)
+- Plot to summarize statistics
+
+Shiny externalizes the parameters so that these features can be  changed interactively
+
+
+::: footer
+
+:::
+
+
+## <span style="font-size:80%">Recommended R Shiny Workflow Approach</span> {.smaller}
+
+- Start with a fully working static plot
+- Wrap it in a minimal Shiny scaffold
+- Introduce one input at a time
+- Verify that each change produces the expected downstream behavior
+
+::: footer
+:::
+
+
+## <span style="font-size:80%">Dataset introduction: Uterine Cancer Dataset</span> {.smaller}
+
+- Uterine corpus endometrial cancer is a malignancy arising from the endometrial lining of the uterus a
+- Incidence has increased over time, in part due to aging populations and rising obesity prevalence.
+- Uterine Corpus Endometrial Carcinoma (UCEC) cohort dataset : harmonized TCGA clinical and molecular data with downstream computational annotations [source: LinkedOmics]
+
+::: footer
+:::
+
+## <span style="font-size:80%">Dataset introduction: Uterine Cancer Dataset</span> {.smaller}
+
+Data Characteristics [select]
+
+- **Patient-level clinical metadata**: age, stage, tumor size, histologic grade, BMI
+- **Time-to-event outcomes with censoring**: overall survival and progression-free survival
+- **Feature-engineered molecular summaries**: mutation indicators, immune deconvolution scores, pathway activity scores
+- **Observational cohort**: no randomization or experimental intervention
+
+::: footer
+:::
+
+## <span style="font-size:80%">Dataset introduction: Uterine Cancer Dataset</span> {.smaller}
+
+- Survival heterogeneity in endometrial cancer is well documented across:
+
+  - clinical stage
+  - tumor grade
+  - molecular subtype
+
+- Large consortia datasets such as TCGA enable systematic comparison of these patterns across patients rather than individual case series
+- **Task**: Create a dashboard to summarize select features within the Uterine Corpus Endometrial Carcinoma (UCEC) cohort dataset
+
+
+::: footer
+:::
+
+## <span style="font-size:80%">Recommended R Shiny Workflow Approach</span> {.smaller}
+
+- **Start with a fully working static plot**
+- Wrap it in a minimal Shiny scaffold
+- Introduce one input at a time
+- Verify that each change produces the expected downstream behavior
+
+::: footer
+:::
+
+<style>
+
+/* ---------- CODE BOX (lower section) ---------- */
+/* Make the CODE BOX smaller without changing text size */
+pre {
+  padding: 0.6em 0.8em;
+  max-height: 220px;
+  overflow-y: auto;
+}
+</style>
+
+## <span style="font-size:80%">Static R Plot</span> {.smaller}
+
+<div style="font-size:0.65em;">
+
+- Read in data
+- Generate static box and whisker plot to summarize tumor size by stage
+
+</div>
+
+```r
+library(tidyverse)
+
+ucec <- read_csv(
+  "uterine_cancer_dataset.csv",
+  show_col_types = FALSE
+) |>
+  select(case_id, Age, Stage, Tumor_Size_cm) |>
+  filter(!is.na(Age), !is.na(Stage), !is.na(Tumor_Size_cm))
+
+  ggplot(ucec, aes(x = Stage, y = Tumor_Size_cm)) +
+  geom_boxplot(alpha = 0.85) +
+  theme_minimal() +
+  labs(title = "Tumor Size by Stage", x = "Stage", y = "Tumor size (cm)")
+```
+
+::: footer
+ 
+:::
+
+
+<style>
+.tiny-table table { font-size: 0.8em; }        /* adjust as needed (0.8–0.9em) */
+.tiny-table figcaption, .tiny-table .table-caption { font-size: 0.75em; }
+</style>
+
+## <span style="font-size:60%">Static R Plot</span> {.smaller}
+
+
+::: columns
+::: {.column .small}
+
+- Read in data
+- Generate static box and whisker plot to summarize tumor size by stage
+
+
+:::
+::: column
+
+```{r}
+#| fig-width: 8
+#| fig-height: 9
+
+library(tidyverse)
+
+ucec <- read_csv(
+  "uterine_cancer_dataset.csv",
+  show_col_types = FALSE
+) |>
+  select(case_id, Age, Stage, Tumor_Size_cm) |>
+  filter(!is.na(Age), !is.na(Stage), !is.na(Tumor_Size_cm))
+
+  ggplot(ucec, aes(x = Stage, y = Tumor_Size_cm)) +
+  geom_boxplot(alpha = 0.85) +
+  theme_minimal() +
+  labs(title = "Tumor Size by Stage", x = "Stage", y = "Tumor size (cm)")
+
+```
+:::
+:::
+
+
+<style>
+.tiny-table table { font-size: 0.8em; }        /* adjust as needed (0.8–0.9em) */
+.tiny-table figcaption, .tiny-table .table-caption { font-size: 0.75em; }
+</style>
+
+## <span style="font-size:80%">Recommended R Shiny Workflow Approach</span> {.smaller}
+
+- Start with a fully working static plot
+- **Wrap it in a minimal Shiny scaffold**
+- Introduce one input at a time
+- Verify that each change produces the expected downstream behavior
+
+::: footer
+:::
+
+<style>
+
+/* ---------- CODE BOX (lower section) ---------- */
+/* Make the CODE BOX smaller without changing text size */
+pre {
+  padding: 0.6em 0.8em;
+  max-height: 520px;
+  overflow-y: auto;
+}
+</style>
+
+## <span style="font-size:80%">Wrap in a minimal Shiny scaffold</span> {.smaller}
+
+<div style="font-size:0.65em;">
+
+
+</div>
+
+```r
+library(shiny)
+library(tidyverse)
+
+# ---- Read data once ----
+ucec <- read_csv(
+  "uterine_cancer_dataset.csv",
+  show_col_types = FALSE
+) |>
+  select(case_id, Age, Stage, Tumor_Size_cm) |>
+  filter(!is.na(Age), !is.na(Stage), !is.na(Tumor_Size_cm))
+
+ui <- fluidPage(
+  titlePanel("UCEC Tumor Size Dashboard (Minimal App)"),
+  plotOutput("size_plot")
+)
+
+server <- function(input, output, session) {
+  output$size_plot <- renderPlot({
+    ggplot(ucec, aes(x = Stage, y = Tumor_Size_cm)) +
+      geom_boxplot(alpha = 0.85) +
+      theme_minimal() +
+      labs(x = "Stage", y = "Tumor size (cm)")
+  })
+}
+
+shinyApp(ui, server)
+```
+
+::: footer
+ 
+:::
+
+
+<style>
+.tiny-table table { font-size: 0.8em; }        /* adjust as needed (0.8–0.9em) */
+.tiny-table figcaption, .tiny-table .table-caption { font-size: 0.75em; }
+</style>
+
+
+
+## <span style="font-size:80%">Recommended R Shiny Workflow Approach</span> {.smaller}
+
+- Start with a fully working static plot
+- Wrap it in a minimal Shiny scaffold
+- **Introduce one input at a time**
+- Verify that each change produces the expected downstream behavior
+
+::: footer
+:::
+
+<style>
+
+/* ---------- CODE BOX (lower section) ---------- */
+/* Make the CODE BOX smaller without changing text size */
+pre {
+  padding: 0.6em 0.8em;
+  max-height: 520px;
+  overflow-y: auto;
+}
+</style>
+
+## <span style="font-size:80%">Feature 1: Add a single input</span> {.smaller}
+
+<div style="font-size:0.65em;">
+
+- Filter input by a single parameter (i.e.: age)
+- Use a feature such as a button or slider to change user view
+
+
+</div>
+
+```r
+sliderInput(
+  "age_range",
+  "Age at diagnosis",
+  min = floor(min(ucec$Age)),
+  max = ceiling(max(ucec$Age)),
+  value = c(50, 80)
+)
+```
+
+::: footer
+ 
+:::
+
+
+<style>
+.tiny-table table { font-size: 0.8em; }        /* adjust as needed (0.8–0.9em) */
+.tiny-table figcaption, .tiny-table .table-caption { font-size: 0.75em; }
+</style>
+
+
+<style>
+
+/* ---------- CODE BOX (lower section) ---------- */
+/* Make the CODE BOX smaller without changing text size */
+pre {
+  padding: 0.6em 0.8em;
+  max-height: 520px;
+  overflow-y: auto;
+}
+</style>
+
+## <span style="font-size:80%">Feature 2: Build a reactive graph</span> {.smaller}
+
+<div style="font-size:0.65em;">
+
+- Shiny is a reactive programming system that automatically tracks dependencies and updates outputs 
+- Shiny allows the user to declare relationships between values
+- Shiny constructs a dependency graph
+- As inputs are updated, Shiny recomputes only what’s necessary to render a new UI
+
+
+
+</div>
+
+```r
+output$size_plot <- renderPlot({
+  df <- ucec |>
+    filter(Age >= input$age_range[1], Age <= input$age_range[2])
+
+  ggplot(df, aes(Stage, Tumor_Size_cm)) +
+    geom_boxplot(alpha = 0.85) +
+    theme_minimal()
+})
+
+
+```
+
+::: footer
+ 
+:::
+
+
+<style>
+.tiny-table table { font-size: 0.8em; }        /* adjust as needed (0.8–0.9em) */
+.tiny-table figcaption, .tiny-table .table-caption { font-size: 0.75em; }
+</style>
+
+
+<style>
+
+/* ---------- CODE BOX (lower section) ---------- */
+/* Make the CODE BOX smaller without changing text size */
+pre {
+  padding: 0.6em 0.8em;
+  max-height: 520px;
+  overflow-y: auto;
+}
+</style>
+
+## <span style="font-size:80%">Feature 2: Build a reactive graph</span> {.smaller}
+
+<div style="font-size:0.65em;">
+
+- Shiny reacts similarly to other UI frameworks (i.e.: React (JavaScript))
+- Reactive graph generated by Shiny is expressed directly through R code using:
+  - input$[xx] (inputs)
+  - reactive({xx}) (cached computations)
+  - render*({xx}) (outputs)
+
+
+</div>
+
+```r
+output$size_plot <- renderPlot({
+  df <- ucec |>
+    filter(Age >= input$age_range[1], Age <= input$age_range[2])
+
+  ggplot(df, aes(Stage, Tumor_Size_cm)) +
+    geom_boxplot(alpha = 0.85) +
+    theme_minimal()
+})
+
+
+```
+
+::: footer
+ 
+:::
+
+
+<style>
+.tiny-table table { font-size: 0.8em; }        /* adjust as needed (0.8–0.9em) */
+.tiny-table figcaption, .tiny-table .table-caption { font-size: 0.75em; }
+</style>
+
+
+<style>
+
+/* ---------- CODE BOX (lower section) ---------- */
+/* Make the CODE BOX smaller without changing text size */
+pre {
+  padding: 0.6em 0.8em;
+  max-height: 220px;
+  overflow-y: auto;
+}
+</style>
+
+## <span style="font-size:80%">Feature 2: Build a reactive graph</span> {.smaller}
+
+<div style="font-size:1.5em;">
+
+| Element | Role in the reactive graph |
+|--------|-------------|
+| `input$age_range` | source of change |
+| `filtered_data()` | code that depends on inputs |
+| `output$size_plot` | Code that depends on filtered_data() |
+</div>
+<br>
+
+```r
+output$size_plot <- renderPlot({
+  df <- ucec |>
+    filter(Age >= input$age_range[1], Age <= input$age_range[2])
+
+  ggplot(df, aes(Stage, Tumor_Size_cm)) +
+    geom_boxplot(alpha = 0.85) +
+    theme_minimal()
+})
+
+```
+
+::: footer
+ 
+:::
+
+<style>
+
+/* ---------- CODE BOX (lower section) ---------- */
+/* Make the CODE BOX smaller without changing text size */
+pre {
+  padding: 0.6em 0.8em;
+  max-height: 220px;
+  overflow-y: auto;
+}
+</style>
+
+
+<style>
+
+/* ---------- CODE BOX (lower section) ---------- */
+/* Make the CODE BOX smaller without changing text size */
+pre {
+  padding: 0.6em 0.8em;
+  max-height: 220px;
+  overflow-y: auto;
+}
+</style>
+
+## <span style="font-size:80%">Feature 3: Emphasize Feature of Interest - Add highlighting</span> {.smaller}
+
+<div style="font-size:1.5em;">
+
+- create a highlight variable inside the reactive data function
+- add derived variables inside the reactive pipeline
+
+
+</div>
+<br>
+
+```r
+filtered_data <- reactive({
+  ucec |>
+    filter(Age >= input$age_range[1], Age <= input$age_range[2]) |>
+    mutate(highlight = Stage == input$stage_highlight)
+})
+
+```
+
+::: footer
+ 
+:::
+
+<style>
+
+/* ---------- CODE BOX (lower section) ---------- */
+/* Make the CODE BOX smaller without changing text size */
+pre {
+  padding: 0.6em 0.8em;
+  max-height: 220px;
+  overflow-y: auto;
+}
+</style>
+
+
+<style>
+
+/* ---------- CODE BOX (lower section) ---------- */
+/* Make the CODE BOX smaller without changing text size */
+pre {
+  padding: 0.6em 0.8em;
+  max-height: 220px;
+  overflow-y: auto;
+}
+</style>
+
+## <span style="font-size:80%">Feature 3: Emphasize Feature of Interest - Add highlighting</span> {.smaller}
+
+<div style="font-size: 0.95em;">
+
+- Map highlight to color
+- Filtering changes whats selected within the dataset
+- Highlighting changes the visual emphasis while preserving the data context
+
+
+
+</div>
+<br>
+
+```r
+output$size_plot <- renderPlot({
+  df <- filtered_data()
+
+  ggplot(df, aes(Stage, Tumor_Size_cm, fill = highlight)) +
+    geom_boxplot(alpha = 0.85) +
+    scale_fill_manual(values = c("TRUE" = "steelblue", "FALSE" = "grey80"), guide = "none") +
+    theme_minimal() +
+    labs(
+      title = "Tumor Size by Stage",
+      subtitle = paste("Highlighted:", input$stage_highlight,
+                       "| Age:", input$age_range[1], "–", input$age_range[2])
+    )
+})
+
+```
+
+::: footer
+ 
+:::
+
+<style>
+
+/* ---------- CODE BOX (lower section) ---------- */
+/* Make the CODE BOX smaller without changing text size */
+pre {
+  padding: 0.6em 0.8em;
+  max-height: 220px;
+  overflow-y: auto;
+}
+</style>
+
+
+
+<style>
+
+/* ---------- CODE BOX (lower section) ---------- */
+/* Make the CODE BOX smaller without changing text size */
+pre {
+  padding: 0.6em 0.8em;
+  max-height: 220px;
+  overflow-y: auto;
+}
+</style>
+
+
+
+## <span style="font-size:80%">Summary</span> {.smaller}
+
+- Shiny extends a static biomedical analysis into an interactive system by exposing analytic parameters as user-controlled inputs while preserving the underlying dataset
+
+- Every shiny app connects three elements—inputs, computations, and outputs—mirroring the structure of a traditional analysis pipeline while allowing real-time exploration
+
+- Reactive programming is the core engine of Shiny, automatically tracking dependencies so that only the necessary computations are re-run when inputs change
+
+::: footer
+:::
+
+## <span style="font-size:80%">Summary</span> {.smaller}
+
+- Starting a new dashboard? Consider:
+
+  - Building dashboards incrementally—starting from a working static plot and adding one input feature at a time
+
+- Biomedical dashboards can function as follows:
+
+  - Expose cohort definitions, confounder adjustments, inferential mode
+
+  - [Future] Allow users to add statistical models on the backend to help others understand what conclusions the data can support
+
+
+::: footer
+:::
+
+
+## END here
+
+
+## Pretty Code {auto-animate="true"}
+
+-   Over 20 syntax highlighting themes available
+-   Default theme optimized for accessibility
+
+``` r
+# Define a server for the Shiny app
+function(input, output) {
+  
+  # Fill in the spot we created for a plot
+  output$phonePlot <- renderPlot({
+    # Render a barplot
+  })
+}
+```
+
+::: footer
+Learn more: [Syntax Highlighting](https://{{< meta prerelease-subdomain >}}quarto.org/docs/output-formats/html-code.html#highlighting)
+:::
+
+
+
+## <span style="font-size:80%">Lecture Overview</span> {.smaller}
+
+- Discuss how FAIR principles enhance clarity and understanding of scientific visuals
+
+- Framework for evaluating FAIR principles in the literature
+
+- Overview of applied use cases
+
+::: footer
+
+:::
+
+
+## <span style="font-size:80%">Applying FAIR Frameworks to Literature Evaluation and Synthesis Process</span> {.smaller}
+
+- Figures and plots are lasting scientific records:
+
+  - Scientific Journals/Publications
+
+  - Trial dossiers
+
+  - Clinical guidelines
+
+- Readers should be able to trace the figure back to the following in order to validate findings:
+
+  - Samples and measurable features used in dataset
+
+  - Processing steps used to analyze data to generate figures
+
+  - Statistical used to generate data points and uncertainty bands within the plot/figure
+
+- Lack of metadata can lead to figures that’re unverifiable
+
+::: footer
+
+:::
+
+
+## <span style="font-size:80%">Applying FAIR Frameworks to Literature Evaluation and Synthesis Process</span> {.smaller}
+
+Consider: Is the science understandable?
+
+  - the core message must be recoverable without guessing
+
+  - visual hierarchy must reveal what matters biologically
+
+    - Strong effects are visually prioritized
+
+    - Contextual or background elements fade into secondary prominence
+    
+    - Uncertainty and variability are visibly encoded, not hidden
+
+  - Common hierarchy strategies
+
+    - Color brightness to emphasize biomarkers with meaningful effect sizes
+    
+    - Line thickness for pathways with stronger evidence
+    
+    - Spatial grouping to reflect biological modules
+    
+    - domain expert should be able to articulate the clinical or mechanistic insight
+
+
+::: footer
+
+:::
+
+
+## <span style="font-size:80%">Evaluating Visuals for Reusability and Scientific Rigor</span> {.smaller}
+
+- Clarity: Can we see the scientific signal?
+
+- Context: Do we know what we’re looking at?
+
+- Accessibility: Who can interpret this accurately?
+
+- FAIRness: Can others find, verify, and reuse it later?
+
+
+::: footer
+
+:::
+
+
+
+## <span style="font-size:80%">Evaluating Visuals for Reusability and Scientific Rigor</span> {.smaller}
+
+::: columns
+::: {.column width="50%"}
+Clarity: Can we see the scientific signal?
+
+- Focus on signal vs. noise:
+
+  - Are effect sizes visible?
+
+  - Are uncertainty measures present?
+  
+  - Is the visual hierarchy guiding attention to key findings?
+
+- Figure
+
+  - Effect sizes are encoded clearly (dots along x‑axis)
+
+  - Weight/precision is encoded via dot size and y‑position — making signal (effect size + uncertainty/weight) readily visible
+
+
+:::
+
+::: {.column width="50%"}
+![](images/figure_1.png){.border .border-thick}
+
+::: incremental
+
+
+:::
+:::
+<span style="font-size:50%">Fitzgerald, KG, et al (2025). Research Synthesis Methods.DOI: https://doi.org/10.1017/rsm.2025.4</span>
+:::
+::: footer
+:::
+
+## <span style="font-size:80%">Evaluating Visuals for Reusability and Scientific Rigor</span> {.smaller}
+
+::: columns
+::: {.column width="50%"}
+Context: Do we know what we’re looking at?
+
+A figure is incomplete without:
+
+  - Units (mg/dL, TPM, odds ratio)
+
+  - Sample/tumor type
+
+  - Study identifiers (e.g., GSE####)
+
+Figure: Expression data from TCGA correlates well with patient-specific RNA-Seq data
+
+  - Sample/tissue type and units are provided
+
+  - Senior authors listed at the top of two sub-panel images
+
+  - Figures do not embed a GEO / GSE / dataset‑ID in the figure legend
+
+:::
+
+::: {.column width="50%"}
+![](images/figure_2.jpg){.border .border-thick}
+
+::: incremental
+
+
+:::
+:::
+<span style="font-size:50%">Frentzen, A., et. al. Front. Genet., 11 January 2023</span>
+:::
+::: footer
+:::
+
+## <span style="font-size:80%">Evaluating Visuals for Reusability and Scientific Rigor</span> {.smaller}
+
+::: columns
+::: {.column width="50%"}
+Accessibility — Who can interpret this accurately?
+
+Visual can be understood by:
+
+  - Machine-readable tools for automation
+
+  - Those without domain-specialized software
+
+  - Figures should avoid bias and exclusion
+
+
+
+:::
+
+::: {.column width="50%"}
+![](images/figure_3.png){.border .border-thick}
+
+::: incremental
+
+
+:::
+:::
+<span style="font-size:50%">Frentzen, A., et. al. Front. Genet., 11 January 2023</span>
+:::
+::: footer
+:::
+
+
+
+## <span style="font-size:80%">Evaluating Visuals for Reusability and Scientific Rigor</span> {.smaller}
+
+
+::: columns
+::: {.column width="50%" style="font-size: 15pt;"}
+FAIRness: Can others find, verify, and reuse it later?
+:::
+
+::: {.column width="10%" style="font-size: 15pt;"}
+| FAIR Principle | Indicators in Figures |
+|-----------|--------------|
+| `Findable` | Dataset ID, DOI, GitHub link in caption |
+| `Accessible` | File type supports extraction, metadata reference |
+| `Interoperable` | Standardized gene/protein names, units |
+| `Reusable` | Standardized gene/protein names, units |
+:::
+
+:::
+::: footer
+:::
+
+
+
+
+
+## <span style="font-size:80%">Comparative Case Studies: Applying FAIR to Figures</span> {.smaller}
+
+::: columns
+::: {.column width="50%"}
+Figure Summary: Bioinformatic analysis identifies ZC3H4 as potentially having a previously unknown role in DNA repair and cell senescence
+
+:::
+
+::: {.column width="50%"}
+![](images/figure_4.jpg){.border .border-thick}
+
+::: incremental
+
+
+:::
+:::
+<span style="font-size:50%">Frey et al., Science Advances (2025). DOI: 10.1126/sciadv.adt8346</span>
+:::
+::: footer
+:::
+
+
+## <span style="font-size:80%">Comparative Case Studies: Applying FAIR to Figures</span> {.smaller}
+
+
+::: columns
+::: {.column width="50%" style="font-size: 15pt;"}
+| Concept | Indicators in Figures |
+|-----------|--------------|
+| `Clarity` | Node size encodes gene-set size; edges (links) represent overlap between gene-sets — so you can visually assess which sets share many genes. The network layout groups similar gene-sets (pathways) so related functional themes cluster visually. |
+| `Context` | Instead of simply listing enriched pathways in a long table, the network situates them in relation to each other — emphasizing functional redundancy or relatedness. The figure helps answer: which functional themes emerge when you consider overlap among enriched gene-sets? |
+
+:::
+
+::: {.column width="50%" style="font-size: 15pt;"}
+![](images/figure_4.jpg){.border .border-thick}
+:::
+<span style="font-size:50%">Frey et al., Science Advances (2025). DOI: 10.1126/sciadv.adt8346</span>
+
+:::
+::: footer
+:::
+
+## <span style="font-size:80%">Comparative Case Studies: Applying FAIR to Figures</span> {.smaller}
+
+
+::: columns
+::: {.column width="50%" style="font-size: 15pt;"}
+| Concept | Indicators in Figures |
+|-----------|--------------|
+| `Accessibility` | For someone unfamiliar with the raw gene list, the network provides an at-a-glance overview of major functional themes.Graph simplifies interpretation by visually clustering related sets rather than hundreds of pathway names.|
+| `FAIRness / Reusability` | Notes from legend and details within the article provides sufficient methodological detail to allow reuse of the workflow on new gene-lists.  |
+
+:::
+
+::: {.column width="50%" style="font-size: 15pt;"}
+![](images/figure_4.jpg){.border .border-thick}
+:::
+<span style="font-size:50%">Frey et al., Science Advances (2025). DOI: 10.1126/sciadv.adt8346</span>
+
+:::
+::: footer
+:::
+
+
+
+
+
+
+
+
+
+## <span style="font-size:80%">Summary</span> {.smaller}
+
+- Figures are lasting scientific evidence — they must be interpretable, traceable, and reusable across publications, regulatory submissions, and clinical decisions
+
+- FAIR-aligned visuals ensure that signal is visible, context is explicit, and metadata enables reproducibility — reducing ambiguity and error in scientific interpretation
+
+- By applying Clarity, Context, Accessibility, and FAIRness as a framework, we can strengthen both scientific rigor and real-world usability of biomedical discoveries
+
+
+::: footer
+:::
+
+## Code Animations {auto-animate="true"}
+
+<div style="font-size:0.65em;">
+
+| Feature | Description |
+|--------|-------------|
+| `Syntax highlighting` | Over 20 built-in themes available |
+| `Accessibility` | Default theme optimized for readable contrast |
+</div>
+
+```r
+# Define a server for the Shiny app
+function(input, output) {
+  
+  # Fill in the spot we created for a plot
+  output$phonePlot <- renderPlot({
+    # Render a barplot
+    barplot(WorldPhones[,input$region]*1000, 
+            main=input$region,
+            ylab="Number of Telephones",
+            xlab="Year")
+  })
+}
+```
+
+::: footer
+ 
+:::
+
+<style>
+
+/* ---------- CODE BOX (lower section) ---------- */
+/* Make the CODE BOX smaller without changing text size */
+pre {
+  padding: 0.6em 0.8em;
+  max-height: 220px;
+  overflow-y: auto;
+}
+</style>
+
+
+
+
+<style>
+.tiny-table table { font-size: 0.8em; }        /* adjust as needed (0.8–0.9em) */
+.tiny-table figcaption, .tiny-table .table-caption { font-size: 0.75em; }
+</style>
+
+## <span style="font-size:60%">Applied example</span> {.smaller}
+
+
+::: columns
+::: {.column width="50%" style="font-size: 15pt;"}
+| Attribute | What is included? |  Why it matters |
+|-----------|--------------|--------------|
+| `Dataset origin` | GEO: GSE99887 | Others can download the data |
+| `Cohort` | UC vs Crohn’s, n=120, treatment-naïve | Validity and bias assessment |
+| `Preprocessing` | DESeq2 VST, top 50 variable genes | Methods must match the question |
+| `Clustering` | Pearson + Ward.D2 | Reproducible interpretation of patterns |
+
+:::
+
+
+
+
+::: {.column width="50%"}
+
+```{r}
+#| fig-width: 8
+#| fig-height: 9
+
+library(glue)
+library(tidyverse)
+
+dataset_accession <- "GSE99887"
+species           <- "Homo sapiens"
+tissue            <- "Colon adenocarcinoma"
+n_samples         <- 120
+norm_method       <- "FPKM"
+clust_method      <- "Hierarchical clustering (1 - Pearson r)"
+
+caption_text <- glue(
+  "GSE99887 {species} {tissue}, n = {n_samples} \n ",
+  "expression values normalized via {norm_method} \n ",
+  "row clustering by {clust_method}"
+)
+
+heat_df <- expand_grid(
+  sample = paste0("S", 1:40),
+  gene   = paste0("G", 1:50)
+) |>
+  mutate(expr = rnorm(n()))
+
+# Simple "heatmap-style" tile plot (for teaching)
+p_heat <- ggplot(heat_df, aes(sample, gene, fill = expr)) +
+  geom_tile() +
+  scale_fill_viridis_c() +
+  theme_minimal(base_size = 8) +
+  theme(
+    axis.text.x   = element_blank(),
+    axis.title.x  = element_text(face = "bold"),
+    axis.title.y  = element_text(face = "bold"),
+    plot.caption  = element_text(size = 9, face = "italic")
+  ) +
+  labs(
+    title   = "Figure 4. Differential expression heatmap in colon tumors",
+    subtitle= glue("{dataset_accession}, {norm_method}; subset of top 50 DE genes"),
+    x       = "Samples",
+    y       = "Genes",
+    fill    = "Expression (z-score)",
+    caption = caption_text
+  )
+
+p_heat
+
+
+```
+:::
+:::
+
+
+<style>
+.tiny-table table { font-size: 0.8em; }        /* adjust as needed (0.8–0.9em) */
+.tiny-table figcaption, .tiny-table .table-caption { font-size: 0.75em; }
+</style>
+
+
+## Pretty Code {auto-animate="true"}
+
+| Feature | Description |
+|--------|-------------|
+| Syntax highlighting | Over 20 built-in themes supported |
+| Accessibility | Default theme optimized for readable contrast |
+| Teaching intent | Emphasize server logic clarity over visual output |
+
+```{r}
+# Define a server for the Shiny app
+function(input, output) {
+  
+  # Fill in the spot we created for a plot
+  output$phonePlot <- renderPlot({
+    # Render a barplot
+  })
+}
+```
+
+::: footer
+Learn more: [Syntax Highlighting](https://{{< meta prerelease-subdomain >}}>
+:::
+
+## Pretty Code {auto-animate="true"}
+
+### Context (what this code assumes)
+
+| Attribute | What is included? | Why it matters |
+|---|---|---|
+| `Dataset origin` | GEO: GSE99887 | Others can download the data |
+| `Cohort` | UC vs Crohn’s, n=120, treatment-naïve | Validity and bias assessment |
+| `Preprocessing` | DESeq2 VST, top 50 variable genes | Methods must match the question |
+| `Clustering` | Pearson + Ward.D2 | Reproducible interpretation of patterns |
+
+---
+
+### Server logic (code only)
+
+```{r}
+# Define a server for the Shiny app
+function(input, output) {
+  
+  # Fill in the spot we created for a plot
+  output$phonePlot <- renderPlot({
+    # Render a barplot
+  })
+}
+```
+
+::: footer
+Learn more: [Syntax Highlighting](https://{{< meta prerelease-subdomain >}}quarto.org/docs/output-formats/html-code.html#hi>
+:::
+
+
+<style>
+/* ---------- TABLE (upper section) ---------- */
+table {
+  font-size: 0.65em;          /* make table text smaller */
+}
+
+table th,
+table td {
+  padding: 0.3em 0.6em;       /* tighten row spacing */
+}
+
+/* ---------- CODE (lower section) ---------- */
+pre code {
+  font-size: 0.85em;          /* readable but compact */
+  line-height: 1.4;
+}
+</style>
+
+## Pretty Code {auto-animate="true"}
+
+### Context (assumptions & design intent)
+
+| Feature | Description |
+|--------|-------------|
+| Syntax highlighting | Over 20 built-in themes supported |
+| Accessibility | Default theme optimized for readable contrast |
+| Teaching intent | Emphasize server logic clarity over visual output |
+
+---
+
+### Server logic
+
+```{r}
+#| echo: true
+#| message: false
+#| warning: false
+
+# Define a server for the Shiny app
+function(input, output) {
+
+  # Fill in the spot we created for a plot
+  output$phonePlot <- renderPlot({
+    # Render a barplot
+  })
+
+}
+```
+
+::: footer
+Learn more: [Syntax Highlighting](https://quarto.org/docs/output-formats/html-code.html#highlighting)
+:::
+
+<style>
+/* Upper section: smaller, contextual */
+.upper-section table {
+  font-size: 0.65em;
+}
+.upper-section table th,
+.upper-section table td {
+  padding: 0.3em 0.6em;
+}
+
+/* Lower section: readable code */
+.lower-section pre code {
+  font-size: 0.85em;
+  line-height: 1.4;
+}
+</style>
+
+## Example Slide {auto-animate="true"}
+
+::: {.upper-section}
+### Context (upper section)
+
+| Attribute | Description |
+|---|---|
+| Dataset | GEO: GSE99887 |
+| Cohort | UC vs Crohn’s, n=120 |
+| Goal | Emphasize logic before output |
+:::
+
+---
+
+::: {.lower-section}
+### Server logic (lower section)
+
+```{r}
+#| echo: true
+#| message: false
+#| warning: false
+
+function(input, output) {
+  output$phonePlot <- renderPlot({
+    # Render a barplot
+  })
+}
+```
+:::
+
+<style>
+/* Make the CODE BOX smaller without changing text size */
+pre {
+  padding: 0.6em 0.8em;   /* reduces box padding */
+  max-height: 220px;      /* limits vertical size */
+  overflow-y: auto;       /* scroll if needed */
+}
+</style>
+## Code Animations {auto-animate="true"}
+
+| Feature | Description |
+|--------|-------------|
+| Syntax highlighting | Over 20 built-in themes available |
+| Accessibility | Default theme optimized for readable contrast |
+
+
+
+``` r
+# Define a server for the Shiny app
+function(input, output) {
+  
+  # Fill in the spot we created for a plot
+  output$phonePlot <- renderPlot({
+    # Render a barplot
+    barplot(WorldPhones[,input$region]*1000, 
+            main=input$region,
+            ylab="Number of Telephones",
+            xlab="Year")
+  })
+}
+```
+
+::: footer
+Learn more: [Code Animations](https://{{< meta prerelease-subdomain >}}quarto.org/docs/presentations/revealjs/advanced.html#code-animations)
+:::
+
+<style>
+/* Make the CODE BOX smaller without changing text size */
+pre {
+  padding: 0.6em 0.8em;   /* reduces box padding */
+  max-height: 220px;      /* limits vertical size */
+  overflow-y: auto;       /* scroll if needed */
+}
+</style>
+
+
+<style>
+
+/* ---------- CODE BOX (lower section) ---------- */
+/* Make the CODE BOX smaller without changing text size */
+pre {
+  padding: 0.6em 0.8em;
+  max-height: 220px;
+  overflow-y: auto;
+}
+</style>
+
+## Code Animations {auto-animate="true"}
+
+<div style="font-size:0.65em;">
+
+| Feature | Description |
+|--------|-------------|
+| Syntax highlighting | Over 20 built-in themes available |
+| Accessibility | Default theme optimized for readable contrast |
+</div>
+
+```r
+# Define a server for the Shiny app
+function(input, output) {
+  
+  # Fill in the spot we created for a plot
+  output$phonePlot <- renderPlot({
+    # Render a barplot
+    barplot(WorldPhones[,input$region]*1000, 
+            main=input$region,
+            ylab="Number of Telephones",
+            xlab="Year")
+  })
+}
+```
+
+::: footer
+ 
+:::
+
+<style>
+
+/* ---------- CODE BOX (lower section) ---------- */
+/* Make the CODE BOX smaller without changing text size */
+pre {
+  padding: 0.6em 0.8em;
+  max-height: 220px;
+  overflow-y: auto;
+}
+</style>
